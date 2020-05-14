@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
 
 import pandas as pd
 
@@ -13,9 +8,6 @@ from nltk.stem import WordNetLemmatizer
 from textblob import TextBlob
 
 lemmatizer = WordNetLemmatizer()
-
-
-# In[2]:
 
 
 ## Encodings
@@ -62,10 +54,6 @@ Feature_Columns = ["word", "lemma", "POS", "POS_Prev", "POS_Next", "Sent_Positio
                    "Negative", "Negative_Context", "Bias_Lexicon"]
 
 
-# In[3]:
-
-
-
 def Load_Lexicon_File(Filename):
     
     with open(Lexicon_Folder_Path + Filename, "r") as file:
@@ -110,18 +98,16 @@ def Get_POS_Tag(sentence):
 
 
 ## Returns position of the word in the sentence. (Start->0, Middle->1, End->2)
-def Get_Sentence_Position(word, sentence):
+def Get_Sentence_Position(Word_Index, Sent_Length):
     
-    sent_words = word_tokenize(sentence)
-    part_size = int(len(sent_words)/3)
+    part_size = int(Sent_Length/3)
     
-    for i in range(0, 3):
-        start_part = i*part_size  
-        if i==2:
-            part_size = len(sent_words) - (2*part_size)
-        for j in range(0,part_size):
-            if sent_words[start_part+j] == word:
-                return i
+    if Word_Index < part_size:
+        return 0
+    elif Word_Index < 2*part_size:
+        return 1
+    else:
+        return 2
 
 ## Ideally, The polarity of word according to Riloff and Wiebe's paper need to be calculated
 ## But I have used TextBlob.
@@ -130,13 +116,11 @@ def Get_Polarity(word):
     Polarity = TextBlob(word).sentiment.polarity
     
     if Polarity < 0:
-        Polarity_Val = 0
+        return 0
     elif Polarity > 0:
-        Polarity_Val = 1
+        return 1
     else:
-        Polarity_Val = 2
-        
-    return Polarity_Val
+        return 2
 
 
 ## Not implemented yet
@@ -147,9 +131,6 @@ def Get_Grammatical_Rel(word, sentence):
 ## Not implemented yet : We can use NPOV edits data that we have 
 def Get_Collaborative_Feature(word):
     return CF_Val
-
-
-# In[4]:
 
 
 ## Input : Sentence
@@ -173,6 +154,17 @@ def Get_Sent_Linguistic_Features(Sentence):
     for Word_Index in range(len(Sent_Words)):
         
         Word = Sent_Words[Word_Index]
+        
+        ## Context Words
+        if Word_Index > 0:
+            Prev_Word = Sent_Words[Word_Index-1]
+        else:
+            Prev_Word = -1
+            
+        if Word_Index < Sent_Length-1:
+            Next_Word = Sent_Words[Word_Index+1]
+        else:
+            Next_Word = -1
         
         ## Feature 1: Word (string)
         Word_Features = [Word]
@@ -203,7 +195,7 @@ def Get_Sent_Linguistic_Features(Sentence):
         Word_Features.append(POS_Tag_Val)
 
         ## Feature 6: Position of word in the sentence (Encoded into int)
-        Sent_Position_Val = Get_Sentence_Position(Word, Sentence)
+        Sent_Position_Val = Get_Sentence_Position(Word_Index, Sent_Length)
         Word_Features.append(Sent_Position_Val)
 
         ## Feature 7: Hedge (1 or 0)
@@ -215,14 +207,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 8: Hedge Context i.e. if Hedge is present in the context (1 or 0)
         Prev_Hedge_Val = 0
-        if Word_Index > 0:
-            if Word in Hedges:
-                Prev_Hedge_Val = 1
+        if Prev_Word in Hedges:
+            Prev_Hedge_Val = 1
         
         Next_Hedge_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Hedges:
-                Next_Hedge_Val = 1
+        if Next_Word in Hedges:
+            Next_Hedge_Val = 1
                 
         if Prev_Hedge_Val or Next_Hedge_Val:
             Hedge_Val = 1
@@ -240,14 +230,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 10: Factive Verb Context i.e. if Factive Verb is present in the context (1 or 0)
         Prev_Factive_Verb_Val = 0
-        if Word_Index > 0:
-            if Word in Factive_Verbs:
-                Prev_Factive_Verb_Val = 1
+        if Prev_Word in Factive_Verbs:
+            Prev_Factive_Verb_Val = 1
         
         Next_Factive_Verb_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Factive_Verbs:
-                Next_Factive_Verb_Val = 1
+        if Next_Word in Factive_Verbs:
+            Next_Factive_Verb_Val = 1
                 
         if Prev_Factive_Verb_Val or Next_Factive_Verb_Val:
             Factive_Verb_Val = 1
@@ -265,14 +253,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 12: Assertive Verb Context i.e. if Assertive Verb is present in the context (1 or 0)
         Prev_Assertive_Verb_Val = 0
-        if Word_Index > 0:
-            if Word in Assertive_Verbs:
-                Prev_Assertive_Verb_Val = 1
+        if Prev_Word in Assertive_Verbs:
+            Prev_Assertive_Verb_Val = 1
         
         Next_Assertive_Verb_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Assertive_Verbs:
-                Next_Assertive_Verb_Val = 1
+        if Next_Word in Assertive_Verbs:
+            Next_Assertive_Verb_Val = 1
                 
         if Prev_Assertive_Verb_Val or Next_Assertive_Verb_Val:
             Assertive_Verb_Val = 1
@@ -290,14 +276,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 14: Implicative Verb Context i.e. if Implicative Verb is present in the context (1 or 0)
         Prev_Implicative_Verb_Val = 0
-        if Word_Index > 0:
-            if Word in Implicative_Verbs:
-                Prev_Implicative_Verb_Val = 1
+        if Prev_Word in Implicative_Verbs:
+            Prev_Implicative_Verb_Val = 1
         
         Next_Implicative_Verb_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Implicative_Verbs:
-                Next_Implicative_Verb_Val = 1
+        if Next_Word in Implicative_Verbs:
+            Next_Implicative_Verb_Val = 1
                 
         if Prev_Implicative_Verb_Val or Next_Implicative_Verb_Val:
             Implicative_Verb_Val = 1
@@ -315,14 +299,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 16: Report Verb Context i.e. if Report Verb is present in the context (1 or 0)
         Prev_Report_Verb_Val = 0
-        if Word_Index > 0:
-            if Word in Report_Verbs:
-                Prev_Report_Verb_Val = 1
+        if Prev_Word in Report_Verbs:
+            Prev_Report_Verb_Val = 1
         
         Next_Report_Verb_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Report_Verbs:
-                Next_Report_Verb_Val = 1
+        if Next_Word in Report_Verbs:
+            Next_Report_Verb_Val = 1
                 
         if Prev_Report_Verb_Val or Next_Report_Verb_Val:
             Reporte_Verb_Val = 1
@@ -340,14 +322,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 18: Entailment Context i.e. if Entailment is present in the context (1 or 0)
         Prev_Entailment_Val = 0
-        if Word_Index > 0:
-            if Word in Entailments:
-                Prev_Entailment_Val = 1
+        if Prev_Word in Entailments:
+            Prev_Entailment_Val = 1
         
         Next_Entailment_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Entailments:
-                Next_Entailment_Val = 1
+        if Next_Word in Entailments:
+            Next_Entailment_Val = 1
                 
         if Prev_Entailment_Val or Next_Entailment_Val:
             Entailment_Val = 1
@@ -365,14 +345,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 20: Strong Subjective Context i.e. if Strong Subjective is present in the context (1 or 0)
         Prev_Strong_Subjective_Val = 0
-        if Word_Index > 0:
-            if Word in Strong_Subjectives:
-                Prev_Strong_Subjective_Val = 1
+        if Prev_Word in Strong_Subjectives:
+            Prev_Strong_Subjective_Val = 1
         
         Next_Strong_Subjective_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Strong_Subjectives:
-                Next_Strong_Subjective_Val = 1
+        if Next_Word in Strong_Subjectives:
+            Next_Strong_Subjective_Val = 1
                 
         if Prev_Strong_Subjective_Val or Next_Strong_Subjective_Val:
             Strong_Subjective_Val = 1
@@ -390,14 +368,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 22: Weak Subjective Context i.e. if Weak Subjective is present in the context (1 or 0)
         Prev_Weak_Subjective_Val = 0
-        if Word_Index > 0:
-            if Word in Weak_Subjectives:
-                Prev_Weak_Subjective_Val = 1
+        if Prev_Word in Weak_Subjectives:
+            Prev_Weak_Subjective_Val = 1
         
         Next_Weak_Subjective_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Weak_Subjectives:
-                Next_Weak_Subjective_Val = 1
+        if Next_Word in Weak_Subjectives:
+            Next_Weak_Subjective_Val = 1
                 
         if Prev_Weak_Subjective_Val or Next_Weak_Subjective_Val:
             Weak_Subjective_Val = 1
@@ -408,7 +384,7 @@ def Get_Sent_Linguistic_Features(Sentence):
         
         ## Feature 23: Polarity of the word (0, 1, 2) 
         Polarity_Val = Get_Polarity(Word)
-        Word_Features.append(Weak_Subjective_Val)
+        Word_Features.append(Polarity_Val)
         
         ## Feature 24: Positive Word (1 or 0)
         if Word in Positive_Words:
@@ -419,14 +395,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 25: Positive Word Context i.e. if Positive Word is present in the context (1 or 0)
         Prev_Positive_Word_Val = 0
-        if Word_Index > 0:
-            if Word in Positive_Words:
-                Prev_Positive_Word_Val = 1
+        if Prev_Word in Positive_Words:
+            Prev_Positive_Word_Val = 1
         
         Next_Positive_Word_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Positive_Words:
-                Next_Positive_Word_Val = 1
+        if Next_Word in Positive_Words:
+            Next_Positive_Word_Val = 1
                 
         if Prev_Positive_Word_Val or Next_Positive_Word_Val:
             Positive_Word_Val = 1
@@ -444,14 +418,12 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 27: Negative Word Context i.e. if Negative Word is present in the context (1 or 0)
         Prev_Negative_Word_Val = 0
-        if Word_Index > 0:
-            if Word in Negative_Words:
-                Prev_Negative_Word_Val = 1
+        if Prev_Word in Negative_Words:
+            Prev_Negative_Word_Val = 1
         
         Next_Negative_Word_Val = 0
-        if Word_Index < Sent_Length-1:
-            if Word in Negative_Words:
-                Next_Negative_Word_Val = 1
+        if Next_Word in Negative_Words:
+            Next_Negative_Word_Val = 1
                 
         if Prev_Negative_Word_Val or Next_Negative_Word_Val:
             Negative_Word_Val = 1
@@ -474,13 +446,10 @@ def Get_Sent_Linguistic_Features(Sentence):
     Sentence_Features_DF = pd.DataFrame(Sentence_Features, columns = Feature_Columns)
     return Sentence_Features_DF
 
-
-# In[5]:
+Load_Lexicons()
 
 
 ## Sample Call to the function
 
-Sent_DF = Get_Sent_Linguistic_Features("it was rather unfortunate that he vehemently opposed the budding indian scientist subrahmanyan chandrasekhar about his theory on the maximum mass of stars known as white dwarfs, the mass above which the star collapses and becomes a neutron star, quark star or black hole.")
-print(Sent_DF.shape)
-print(Sent_DF)
-
+# from Linguistic_Features import*
+# Sent_DF = Get_Sent_Linguistic_Features("it was rather unfortunate that he vehemently opposed the budding indian scientist subrahmanyan chandrasekhar about his theory on the maximum mass of stars known as white dwarfs, the mass above which the star collapses and becomes a neutron star, quark star or black hole.")
