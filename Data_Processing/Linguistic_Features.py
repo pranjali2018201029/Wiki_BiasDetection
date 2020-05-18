@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
 
 import pandas as pd
 
@@ -10,6 +15,9 @@ from textblob import TextBlob
 lemmatizer = WordNetLemmatizer()
 
 
+# In[2]:
+
+
 ## Encodings
 
 ## POS Tags
@@ -18,7 +26,7 @@ POS_Tag_Encoding = {"CC" : 0, "CD" : 1, "DT" : 2, "EX" : 3, "FW" : 4, "IN" : 5, 
                    "LS" : 9, "MD" : 10, "NN" : 11, "NNS" : 12, "NNP" : 13, "NNPS" : 14, "PDT" : 15, "POS" : 16,
                    "PRP" : 17, "PRP$" : 18, "RB" : 19, "RBR" : 20, "RBS" : 21, "RP" : 22, "TO" : 23, "UH" : 24,
                    "VB" : 25, "VBD" : 26, "VBG" : 27, "VBN" : 28, "VBP" : 29, "VBZ" : 30, "WDT" : 31, "WP" : 32,
-                   "WP$" : 33, "WRB" : 34}
+                   "WP$" : 33, "WRB" : 34, "SYM" : 35}
 
 ## Position in sentence
 Sent_Position_Encoding = {"Start" : 0, "Middle" : 1, "End" : 2 }
@@ -52,6 +60,10 @@ Feature_Columns = ["word", "lemma", "POS", "POS_Prev", "POS_Next", "Sent_Positio
                    "Entailment", "Entailment_Context", "StrongSub", "StrongSub_Context", 
                    "WeakSub", "WeakSub_Context", "Polarity", "Positive", "Positive_Context", 
                    "Negative", "Negative_Context", "Bias_Lexicon"]
+
+
+# In[3]:
+
 
 
 def Load_Lexicon_File(Filename):
@@ -133,6 +145,9 @@ def Get_Collaborative_Feature(word):
     return CF_Val
 
 
+# In[4]:
+
+
 ## Input : Sentence
 ## Output : Pandas DataFrame where each row represents linguistic features of word in the sentence, 
 ##          Columns names list is mentioned at the start of the code
@@ -150,6 +165,8 @@ def Get_Sent_Linguistic_Features(Sentence):
     
     Sent_POS_Tags = Get_POS_Tag(Sentence)
     Sent_POS_Tags = [t for t in Sent_POS_Tags if t[0].isalpha()]
+    
+    print(Sent_POS_Tags)
     
     for Word_Index in range(len(Sent_Words)):
         
@@ -175,13 +192,19 @@ def Get_Sent_Linguistic_Features(Sentence):
 
         ## Feature 3: POS Tag (Tag encoded into int)
         POS_Tag = Sent_POS_Tags[Word_Index][1]
-        POS_Tag_Val = POS_Tag_Encoding[POS_Tag]
+        if POS_Tag in POS_Tag_Encoding.keys():
+            POS_Tag_Val = POS_Tag_Encoding[POS_Tag]
+        else:
+            POS_Tag_Val = POS_Tag_Encoding["NNP"]
         Word_Features.append(POS_Tag_Val)
 
         ## Feature 4: POS Tag of previous word (Tag encoded into int)
         if Word_Index > 0:
             POS_Tag = Sent_POS_Tags[Word_Index-1][1]
-            POS_Tag_Val = POS_Tag_Encoding[POS_Tag]
+            if POS_Tag in POS_Tag_Encoding.keys():
+                POS_Tag_Val = POS_Tag_Encoding[POS_Tag]
+            else:
+                POS_Tag_Val = POS_Tag_Encoding["NNP"]
         else:
             POS_Tag_Val = -1
         Word_Features.append(POS_Tag_Val)
@@ -189,7 +212,10 @@ def Get_Sent_Linguistic_Features(Sentence):
         ## Feature 5: POS Tag of next word (Tag encoded into int)
         if Word_Index < Sent_Length-1:
             POS_Tag = Sent_POS_Tags[Word_Index+1][1]
-            POS_Tag_Val = POS_Tag_Encoding[POS_Tag]
+            if POS_Tag in POS_Tag_Encoding.keys():
+                POS_Tag_Val = POS_Tag_Encoding[POS_Tag]
+            else:
+                POS_Tag_Val = POS_Tag_Encoding["NNP"]
         else:
             POS_Tag_Val = -1
         Word_Features.append(POS_Tag_Val)
@@ -446,10 +472,20 @@ def Get_Sent_Linguistic_Features(Sentence):
     Sentence_Features_DF = pd.DataFrame(Sentence_Features, columns = Feature_Columns)
     return Sentence_Features_DF
 
-Load_Lexicons()
+
+# In[5]:
 
 
-## Sample Call to the function
-
+# ## Sample Call to the function
 # from Linguistic_Features import*
+
 # Sent_DF = Get_Sent_Linguistic_Features("it was rather unfortunate that he vehemently opposed the budding indian scientist subrahmanyan chandrasekhar about his theory on the maximum mass of stars known as white dwarfs, the mass above which the star collapses and becomes a neutron star, quark star or black hole.")
+# print(Sent_DF.shape)
+# print(Sent_DF)
+
+
+# # In[ ]:
+
+
+
+
