@@ -166,8 +166,6 @@ def Get_Sent_Linguistic_Features(Sentence):
     Sent_POS_Tags = Get_POS_Tag(Sentence)
     Sent_POS_Tags = [t for t in Sent_POS_Tags if t[0].isalpha()]
     
-    print(Sent_POS_Tags)
-    
     for Word_Index in range(len(Sent_Words)):
         
         Word = Sent_Words[Word_Index]
